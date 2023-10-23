@@ -1,0 +1,41 @@
+# Use the official GCC image as the base image
+FROM gcc:11.3.0
+
+ARG UID=1000
+ARG GID=1000
+
+# Install necessary packages and build tools
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    libx11-dev \
+    libxrandr-dev \
+    libxi-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libasound2-dev \
+    libxcursor-dev \
+    libxinerama-dev
+
+
+# raylib
+ENV RAYLIB_VERSION 4.5.0
+ENV RAYLIB_SOURCE_DIR /usr/local/src/raylib
+RUN mkdir -p $RAYLIB_SOURCE_DIR
+RUN git clone https://github.com/raysan5/raylib.git $RAYLIB_SOURCE_DIR
+RUN cd $RAYLIB_SOURCE_DIR && git checkout $RAYLIB_VERSION
+
+# compile raylib gnu linux
+RUN cd $RAYLIB_SOURCE_DIR/src && \
+    make clean && \
+    make -j PLATFORM=PLATFORM_DESKTOP && \
+    make install
+
+COPY entrypoint-linux_x64.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+RUN groupadd -r rey -g $GID && \
+    useradd -u $UID -r -g rey -s /bin/bash -c "raylib user" rey
+
+USER rey
+WORKDIR /game
