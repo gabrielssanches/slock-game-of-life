@@ -20,6 +20,7 @@
 #include <X11/Xutil.h>
 
 #include "arg.h"
+#include "slock_raylib.h"
 #include "util.h"
 
 char *argv0;
@@ -302,8 +303,6 @@ usage(void)
 {
 	die("usage: slock [-v] [cmd [arg ...]]\n");
 }
-
-#include "slock_raylib.h"
 
 int
 main(int argc, char **argv) {

@@ -3,9 +3,20 @@
 #include "raylib.h"
 
 void slock_raylib_init(void) {
-    InitWindow(300, 200, "screen-lock");
+    int display = GetCurrentMonitor();
+    int screen_width = GetMonitorWidth(display);
+    int screen_height = GetMonitorHeight(display);
+
+    SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_TOPMOST | FLAG_WINDOW_ALWAYS_RUN);
+    InitWindow(screen_width, screen_height, "screen-lock");
 
     SetTargetFPS(60);
+
+    if (!IsWindowFullscreen()) {
+
+        // ToggleFullscreen does not scale the window to fit the monitor, it changes the monitor resolution to match the window.
+        ToggleFullscreen();
+    }
 }
 
 void slock_raylib_run(void) {
@@ -22,6 +33,10 @@ void slock_raylib_run(void) {
         p1.height = 100.0f;
 
         DrawRectangleRec(p1, RED);
+    
+        int key = GetKeyPressed();
+
+        DrawText(TextFormat("Key pressed: %i", key), 110, 110, 20, RAYWHITE);
     
         EndDrawing();
     }
