@@ -3,7 +3,7 @@
 
 include config.mk
 
-SRC = slock.c ${COMPATSRC}
+SRC = slock.c slock_raylib.c ${COMPATSRC}
 OBJ = ${SRC:.c=.o}
 
 all: slock
@@ -11,7 +11,7 @@ all: slock
 .c.o:
 	${CC} -c ${CFLAGS} $<
 
-${OBJ}: config.h config.mk arg.h util.h
+${OBJ}: config.h config.mk arg.h util.h slock_raylib.h
 
 config.h:
 	cp config.def.h $@

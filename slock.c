@@ -303,6 +303,8 @@ usage(void)
 	die("usage: slock [-v] [cmd [arg ...]]\n");
 }
 
+#include "slock_raylib.h"
+
 int
 main(int argc, char **argv) {
 	struct xrandr rr;
@@ -344,8 +346,15 @@ main(int argc, char **argv) {
 	if (!crypt("", hash))
 		die("slock: crypt: %s\n", strerror(errno));
 
-	if (!(dpy = XOpenDisplay(NULL)))
-		die("slock: cannot open display\n");
+
+    slock_raylib_init();
+    
+    slock_raylib_run();
+
+    return 0;
+
+	//if (!(dpy = XOpenDisplay(NULL)))
+	//	die("slock: cannot open display\n");
 
 	/* drop privileges */
 	if (setgroups(0, NULL) < 0)
