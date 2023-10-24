@@ -3,18 +3,30 @@
 #include "raylib.h"
 #include <string.h>
 
+struct gamectx {
+    struct {
+        int height;
+        int width;
+        int nlines_h;
+        int nlines_v;
+        int cell_size;
+    } grid;
+    struct {
+        int width;
+        int height;
+    } display;
+};
+static struct gamectx _g;
+
 static char _passwd[32];
-static int screen_height;
-static int screen_width;
-static int cell_size = 30;
 
 void slock_raylib_init(void) {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_TOPMOST | FLAG_WINDOW_ALWAYS_RUN);
-    InitWindow(screen_width, screen_height, "screen-lock");
+    InitWindow(0, 0, "screen-lock");
 
     int display = GetCurrentMonitor();
-    screen_width = GetMonitorWidth(display);
-    screen_height = GetMonitorHeight(display);
+    _g.display.width = GetMonitorWidth(display);
+    _g.display.height = GetMonitorHeight(display);
 
 
     //SetExitKey(KEY_NULL); // disables ESC key from closing the window
@@ -30,30 +42,35 @@ void slock_raylib_init(void) {
     }
 
     memset(&_passwd, 0, sizeof(_passwd));
+
+    _g.grid.cell_size = 30;
+    _g.grid.width = ((1 + (_g.display.width / _g.grid.cell_size)) * _g.grid.cell_size);
+    _g.grid.height = ((0 + (_g.display.height / _g.grid.cell_size)) * _g.grid.cell_size);
+    _g.grid.nlines_h = 1 + (_g.grid.height / _g.grid.cell_size);
+    _g.grid.nlines_v = 1 + (_g.grid.width / _g.grid.cell_size);
 }
 
 void slock_raylib_run(void) {
-    Camera2D camera1 = { 0 };
-    camera1.target = (Vector2){ screen_width/2.0f, screen_height/2.0f };
-    camera1.offset = (Vector2){ screen_width/2.0f, screen_height/2.0f };
-    camera1.rotation = 0.0f;
-    camera1.zoom = 0.90f;
+    // sets camera mid screen
+    Camera2D cam = { 0 };
+    cam.target = (Vector2){ _g.display.width/2.0f, _g.display.height/2.0f };
+    cam.offset = cam.target;
+    cam.rotation = 0.0f;
+    cam.zoom = 1.10f;
 
     while (!WindowShouldClose()) {   // Detect window close button or ESC key
         BeginDrawing();
 
-        BeginMode2D(camera1);
+        BeginMode2D(cam);
 
         ClearBackground(RAYWHITE);
 
         // draw grid
-        int nlines_h = 1 + (screen_height / cell_size);
-        for (int i = 0; i < nlines_h; i++) {
-            DrawLineV((Vector2){0, cell_size * i}, (Vector2){screen_width, cell_size * i}, LIGHTGRAY);
+        for (int i = 0; i < _g.grid.nlines_h; i++) {
+            DrawLineV((Vector2){0, _g.grid.cell_size * i}, (Vector2){_g.grid.width, _g.grid.cell_size * i}, LIGHTGRAY);
         }
-        int nlines_v = 1 + (screen_width / cell_size);
-        for (int i = 0; i < nlines_v; i++) {
-            DrawLineV((Vector2){cell_size * i, 0}, (Vector2){cell_size * i, screen_height}, LIGHTGRAY);
+        for (int i = 0; i < _g.grid.nlines_v; i++) {
+            DrawLineV((Vector2){_g.grid.cell_size * i, 0}, (Vector2){_g.grid.cell_size * i, _g.grid.height}, LIGHTGRAY);
         }
 
         int key = GetKeyPressed();
