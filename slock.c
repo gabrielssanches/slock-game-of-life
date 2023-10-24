@@ -316,6 +316,7 @@ main(int argc, char **argv) {
 	Display *dpy;
 	int s, nlocks, nscreens;
 
+#if 0
 	ARGBEGIN {
 	case 'v':
 		puts("slock-"VERSION);
@@ -345,7 +346,7 @@ main(int argc, char **argv) {
 	if (!crypt("", hash))
 		die("slock: crypt: %s\n", strerror(errno));
 
-
+#endif
     slock_raylib_init();
     
     slock_raylib_run();
