@@ -7,8 +7,8 @@ struct gamectx {
     struct {
         int height;
         int width;
-        int nlines_h;
-        int nlines_v;
+        int ncell_h;
+        int ncell_v;
         int cell_size;
     } grid;
     struct {
@@ -35,19 +35,20 @@ void slock_raylib_init(void) {
 
     SetTargetFPS(60);
 
+#if 0
     if (!IsWindowFullscreen()) {
 
         // ToggleFullscreen does not scale the window to fit the monitor, it changes the monitor resolution to match the window.
         ToggleFullscreen();
     }
-
+#endif
     memset(&_passwd, 0, sizeof(_passwd));
 
     _g.grid.cell_size = 30;
-    _g.grid.width = ((1 + (_g.display.width / _g.grid.cell_size)) * _g.grid.cell_size);
+    _g.grid.width = ((0 + (_g.display.width / _g.grid.cell_size)) * _g.grid.cell_size);
     _g.grid.height = ((0 + (_g.display.height / _g.grid.cell_size)) * _g.grid.cell_size);
-    _g.grid.nlines_h = 1 + (_g.grid.height / _g.grid.cell_size);
-    _g.grid.nlines_v = 1 + (_g.grid.width / _g.grid.cell_size);
+    _g.grid.ncell_h = _g.grid.height / _g.grid.cell_size;
+    _g.grid.ncell_v = _g.grid.width / _g.grid.cell_size;
 }
 
 void slock_raylib_run(void) {
@@ -56,20 +57,29 @@ void slock_raylib_run(void) {
     cam.target = (Vector2){ _g.display.width/2.0f, _g.display.height/2.0f };
     cam.offset = cam.target;
     cam.rotation = 0.0f;
-    cam.zoom = 1.10f;
+    cam.zoom = 1.0f;
 
     while (!WindowShouldClose()) {   // Detect window close button or ESC key
+        // camera movements
+        cam.zoom += ((float)GetMouseWheelMove()*0.05f);
+        if (IsMouseButtonDown(MOUSE_BUTTON_MIDDLE)) {
+            Vector2 mouse_delta = GetMouseDelta();
+            cam.offset.x += mouse_delta.x;
+            cam.offset.y += mouse_delta.y;
+        }
+
+
+
         BeginDrawing();
 
         BeginMode2D(cam);
 
         ClearBackground(RAYWHITE);
-
         // draw grid
-        for (int i = 0; i < _g.grid.nlines_h; i++) {
+        for (int i = 0; i < _g.grid.ncell_h + 1; i++) {
             DrawLineV((Vector2){0, _g.grid.cell_size * i}, (Vector2){_g.grid.width, _g.grid.cell_size * i}, LIGHTGRAY);
         }
-        for (int i = 0; i < _g.grid.nlines_v; i++) {
+        for (int i = 0; i < _g.grid.ncell_v + 1; i++) {
             DrawLineV((Vector2){_g.grid.cell_size * i, 0}, (Vector2){_g.grid.cell_size * i, _g.grid.height}, LIGHTGRAY);
         }
 
@@ -78,7 +88,7 @@ void slock_raylib_run(void) {
             break;
         }
 
-        DrawText(TextFormat("Key pressed: %i", key), 110, 110, 20, RAYWHITE);
+        DrawText(TextFormat("Key pressed: %i", key), 110, 110, 20, BLACK);
 
         EndMode2D();
     
