@@ -4,15 +4,15 @@
 #include <string.h>
 #include <stdint.h>
 
+struct grid {
+    int height;
+    int width;
+    int ncell_h;
+    int ncell_v;
+    int cell_size;
+    unsigned int* cells;
+} grid;
 struct gamectx {
-    struct {
-        int height;
-        int width;
-        int ncell_h;
-        int ncell_v;
-        int cell_size;
-        unsigned int* cells;
-    } grid;
     struct {
         int width;
         int height;
@@ -32,6 +32,32 @@ static unsigned int* __cell_create(const int n_horizontal, const int n_vertical)
     memset(cells, 0, sizeof(unsigned int) * n_horizontal * n_vertical);
     return cells;
 }
+
+static int __gol_neighbors_get(int i) {
+    int line = i / _g.grid.ncell_h;
+    int col = (i % _g.grid.ncell_h);
+
+    int ngi = 0;
+    if (col > 0) { ng[ngi++] = i - 1; }
+    if (col > 0) { ng[ngi++] = i - 1; }
+
+}
+
+static __gol_solve() {
+    // game of life rules https://en.wikipedia.org/wiki/Conway's_Game_of_Life#Rules
+
+    for (int i = 0; i < max; i++) {
+        int line = i / _g.grid.ncell_h;
+        int col = (i % _g.grid.ncell_h);
+
+        int neighbors_alive = 0;
+        // 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
+        if ((_g.grid.cells[i] & CELL_ALIVE) != 0) {
+    //
+    // 2. Any live cell with two or three live neighbours lives on to the next generation.
+    // 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
+    // 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+
 
 void slock_raylib_init(void) {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_TOPMOST | FLAG_WINDOW_ALWAYS_RUN);
@@ -87,11 +113,6 @@ void slock_raylib_run(void) {
             cam.offset.y += mouse_delta.y;
         }
 
-        // game of life rules https://en.wikipedia.org/wiki/Conway's_Game_of_Life#Rules
-        // 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
-        // 2. Any live cell with two or three live neighbours lives on to the next generation.
-        // 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
-        // 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
         //__cell_solve(_g.grid.cells, _g.grid.ncell_h, _g.grid.ncell_v);
 
         BeginDrawing();

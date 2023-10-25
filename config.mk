@@ -10,9 +10,12 @@ MANPREFIX = ${PREFIX}/share/man
 X11INC = /usr/X11R6/include
 X11LIB = /usr/X11R6/lib
 
+# raylib
+RAYLIB_LIBS = -L ../raylib/src -lraylib -lGL -lm -lpthread -ldl -lrt
+RAYLIB_INC = -I../raylib/src
+
 # includes and libs
-INCS = -I. -I/usr/include -I${X11INC}
-RAYLIB_LIBS = -lraylib -lGL -lm -lpthread -ldl -lrt
+INCS = -I. -I/usr/include -I${X11INC} $(RAYLIB_INC)
 LIBS = -L/usr/lib -lc -lcrypt -L${X11LIB} -lX11 -lXext -lXrandr $(RAYLIB_LIBS)
 
 # flags
