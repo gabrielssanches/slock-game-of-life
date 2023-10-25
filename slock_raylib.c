@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 #include <string.h>
+#include <stdint.h>
 
 struct gamectx {
     struct {
@@ -10,6 +11,7 @@ struct gamectx {
         int ncell_h;
         int ncell_v;
         int cell_size;
+        unsigned int* cells;
     } grid;
     struct {
         int width;
@@ -19,6 +21,17 @@ struct gamectx {
 static struct gamectx _g;
 
 static char _passwd[32];
+
+#define CELL_ALIVE  (1 << 0)
+#define CELL_BORN   (1 << 1)
+#define CELL_KILL   (1 << 2)
+#define CELL_GET_AGE(x)  (((x) & 0xFFFF0000) >> 4)
+
+static unsigned int* __cell_create(const int n_horizontal, const int n_vertical) {
+    unsigned int* cells = malloc(sizeof(unsigned int) * n_horizontal * n_vertical);
+    memset(cells, 0, sizeof(unsigned int) * n_horizontal * n_vertical);
+    return cells;
+}
 
 void slock_raylib_init(void) {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_TOPMOST | FLAG_WINDOW_ALWAYS_RUN);
@@ -47,8 +60,14 @@ void slock_raylib_init(void) {
     _g.grid.cell_size = 30;
     _g.grid.width = ((0 + (_g.display.width / _g.grid.cell_size)) * _g.grid.cell_size);
     _g.grid.height = ((0 + (_g.display.height / _g.grid.cell_size)) * _g.grid.cell_size);
-    _g.grid.ncell_h = _g.grid.height / _g.grid.cell_size;
-    _g.grid.ncell_v = _g.grid.width / _g.grid.cell_size;
+    _g.grid.ncell_v = _g.grid.height / _g.grid.cell_size;
+    _g.grid.ncell_h = _g.grid.width / _g.grid.cell_size;
+    _g.grid.cells = __cell_create(_g.grid.ncell_v, _g.grid.ncell_h);
+
+    _g.grid.cells[0] = CELL_ALIVE;
+    _g.grid.cells[_g.grid.ncell_h -1] = CELL_ALIVE;
+    _g.grid.cells[((_g.grid.ncell_v -1) * _g.grid.ncell_h)] = CELL_ALIVE;
+    _g.grid.cells[(_g.grid.ncell_v * _g.grid.ncell_h) - 1] = CELL_ALIVE;
 }
 
 void slock_raylib_run(void) {
@@ -68,19 +87,35 @@ void slock_raylib_run(void) {
             cam.offset.y += mouse_delta.y;
         }
 
-
+        // game of life rules https://en.wikipedia.org/wiki/Conway's_Game_of_Life#Rules
+        // 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
+        // 2. Any live cell with two or three live neighbours lives on to the next generation.
+        // 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
+        // 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+        //__cell_solve(_g.grid.cells, _g.grid.ncell_h, _g.grid.ncell_v);
 
         BeginDrawing();
 
         BeginMode2D(cam);
 
         ClearBackground(RAYWHITE);
+
         // draw grid
-        for (int i = 0; i < _g.grid.ncell_h + 1; i++) {
+        for (int i = 0; i < _g.grid.ncell_v + 1; i++) {
             DrawLineV((Vector2){0, _g.grid.cell_size * i}, (Vector2){_g.grid.width, _g.grid.cell_size * i}, LIGHTGRAY);
         }
-        for (int i = 0; i < _g.grid.ncell_v + 1; i++) {
+        for (int i = 0; i < _g.grid.ncell_h + 1; i++) {
             DrawLineV((Vector2){_g.grid.cell_size * i, 0}, (Vector2){_g.grid.cell_size * i, _g.grid.height}, LIGHTGRAY);
+        }
+
+        // draw life
+        for (int i = 0; i < (_g.grid.ncell_v * _g.grid.ncell_h); i++) {
+            int line = i / _g.grid.ncell_h;
+            int col = (i % _g.grid.ncell_h);
+            if ((_g.grid.cells[i] & CELL_ALIVE) != 0) {
+                Rectangle life = { _g.grid.cell_size * col, _g.grid.cell_size * line, _g.grid.cell_size, _g.grid.cell_size };
+                DrawRectangleRec(life, RED);
+            }
         }
 
         int key = GetKeyPressed();
