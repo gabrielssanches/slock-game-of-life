@@ -3,14 +3,12 @@
 #include "raylib.h"
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 struct gol {
-    int height;
-    int width;
-    int ncell_h;
-    int ncell_v;
-    int cell_size;
-    unsigned int* cells;
+    int cell_nh;
+    int cell_nv;
+    unsigned int* cell_array;
 };
 
 struct gamectx {
@@ -19,6 +17,11 @@ struct gamectx {
         int width;
         int height;
     } display;
+    struct {
+        int size;
+        int nh;
+        int nv;
+    } grid;
 };
 static struct gamectx _g;
 
@@ -29,21 +32,32 @@ static char _passwd[32];
 #define CELL_KILL   (1 << 2)
 #define CELL_GET_AGE(x)  (((x) & 0xFFFF0000) >> 4)
 
-static unsigned int* __gol_create(struconst int n_horizontal, const int n_vertical) {
-    _g.gol.cell_size = 30;
-    _g.gol.width = ((0 + (_g.display.width / _g.gol.cell_size)) * _g.gol.cell_size);
-    _g.gol.height = ((0 + (_g.display.height / _g.gol.cell_size)) * _g.gol.cell_size);
-    _g.gol.ncell_v = _g.gol.height / _g.gol.cell_size;
-    _g.gol.ncell_h = _g.gol.width / _g.gol.cell_size;
-    unsigned int* cells = malloc(sizeof(unsigned int) * n_horizontal * n_vertical);
-    memset(cells, 0, sizeof(unsigned int) * n_horizontal * n_vertical);
-    return cells;
+static void gol_create(struct gol* gol, const int ncells_horizontal, const int ncells_vertical) {
+    gol->cell_nv = ncells_vertical;
+    gol->cell_nh = ncells_horizontal;
+    int ncells = gol->cell_nh * gol->cell_nv;
+    gol->cell_array = malloc(sizeof(unsigned int) * ncells);
+    memset(gol->cell_array, 0, sizeof(unsigned int) * ncells);
+
+    gol->cell_array[0] = CELL_ALIVE;
+    gol->cell_array[gol->cell_nh -1] = CELL_ALIVE;
+    gol->cell_array[((gol->cell_nv -1) * gol->cell_nh)] = CELL_ALIVE;
+    gol->cell_array[(gol->cell_nv * gol->cell_nh) - 1] = CELL_ALIVE;
+}
+
+static bool gol_cell_is_alive(struct gol* gol, const int col, const int line) {
+    bool alive = false;
+    int i = col + (line * gol->cell_nh);
+    if ((gol->cell_array[i] & CELL_ALIVE) != 0) {
+        alive = true;
+    }
+    return alive;
 }
 
 #if 0
 static int __gol_neighbors_get(int i) {
-    int line = i / _g.gol.ncell_h;
-    int col = (i % _g.gol.ncell_h);
+    int line = i / _g.gol.cell_nh;
+    int col = (i % _g.gol.cell_nh);
 
     int ngi = 0;
     if (col > 0) { ng[ngi++] = i - 1; }
@@ -55,8 +69,8 @@ static __gol_solve() {
     // game of life rules https://en.wikipedia.org/wiki/Conway's_Game_of_Life#Rules
 
     for (int i = 0; i < max; i++) {
-        int line = i / _g.gol.ncell_h;
-        int col = (i % _g.gol.ncell_h);
+        int line = i / _g.gol.cell_nh;
+        int col = (i % _g.gol.cell_nh);
 
         int neighbors_alive = 0;
         // 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
@@ -92,12 +106,10 @@ void slock_raylib_init(void) {
 #endif
     memset(&_passwd, 0, sizeof(_passwd));
 
-    __gol_create(&_g.gol, _g.display.width, _g.display.height, 30);
-
-    _g.gol.cells[0] = CELL_ALIVE;
-    _g.gol.cells[_g.gol.ncell_h -1] = CELL_ALIVE;
-    _g.gol.cells[((_g.gol.ncell_v -1) * _g.gol.ncell_h)] = CELL_ALIVE;
-    _g.gol.cells[(_g.gol.ncell_v * _g.gol.ncell_h) - 1] = CELL_ALIVE;
+    _g.grid.size = 30;
+    _g.grid.nh = _g.display.width / _g.grid.size;
+    _g.grid.nv = _g.display.height / _g.grid.size;
+    gol_create(&_g.gol, _g.grid.nh, _g.grid.nv);
 }
 
 void slock_raylib_run(void) {
@@ -117,7 +129,7 @@ void slock_raylib_run(void) {
             cam.offset.y += mouse_delta.y;
         }
 
-        //__gol_solve(_g.gol.cells, _g.gol.ncell_h, _g.gol.ncell_v);
+        //__gol_solve(_g.gol.cells, _g.gol.cell_nh, _g.gol.cell_nv);
 
         BeginDrawing();
 
@@ -126,19 +138,19 @@ void slock_raylib_run(void) {
         ClearBackground(RAYWHITE);
 
         // draw gol
-        for (int i = 0; i < _g.gol.ncell_v + 1; i++) {
-            DrawLineV((Vector2){0, _g.gol.cell_size * i}, (Vector2){_g.gol.width, _g.gol.cell_size * i}, LIGHTGRAY);
+        for (int i = 0; i < _g.gol.cell_nv + 1; i++) {
+            DrawLineV((Vector2){0, _g.grid.size * i}, (Vector2){_g.display.width, _g.grid.size * i}, LIGHTGRAY);
         }
-        for (int i = 0; i < _g.gol.ncell_h + 1; i++) {
-            DrawLineV((Vector2){_g.gol.cell_size * i, 0}, (Vector2){_g.gol.cell_size * i, _g.gol.height}, LIGHTGRAY);
+        for (int i = 0; i < _g.gol.cell_nh + 1; i++) {
+            DrawLineV((Vector2){_g.grid.size * i, 0}, (Vector2){_g.grid.size * i, _g.display.height}, LIGHTGRAY);
         }
 
         // draw life
-        for (int i = 0; i < (_g.gol.ncell_v * _g.gol.ncell_h); i++) {
-            int line = i / _g.gol.ncell_h;
-            int col = (i % _g.gol.ncell_h);
-            if ((_g.gol.cells[i] & CELL_ALIVE) != 0) {
-                Rectangle life = { _g.gol.cell_size * col, _g.gol.cell_size * line, _g.gol.cell_size, _g.gol.cell_size };
+        for (int i = 0; i < (_g.gol.cell_nv * _g.gol.cell_nh); i++) {
+            int line = i / _g.gol.cell_nh;
+            int col = (i % _g.gol.cell_nh);
+            if (gol_cell_is_alive(&_g.gol, col, line)) {
+                Rectangle life = { _g.grid.size * col, _g.grid.size * line, _g.grid.size, _g.grid.size };
                 DrawRectangleRec(life, RED);
             }
         }
