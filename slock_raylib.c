@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 struct gol {
     int cell_nh;
@@ -39,10 +40,20 @@ static void gol_create(struct gol* gol, const int ncells_horizontal, const int n
     gol->cell_array = malloc(sizeof(unsigned int) * ncells);
     memset(gol->cell_array, 0, sizeof(unsigned int) * ncells);
 
+#if 0
     gol->cell_array[0] = CELL_ALIVE;
     gol->cell_array[gol->cell_nh -1] = CELL_ALIVE;
     gol->cell_array[((gol->cell_nv -1) * gol->cell_nh)] = CELL_ALIVE;
     gol->cell_array[(gol->cell_nv * gol->cell_nh) - 1] = CELL_ALIVE;
+    gol->cell_array[2*gol->cell_nh + 10] = CELL_ALIVE;
+    gol->cell_array[2*gol->cell_nh + 11] = CELL_ALIVE;
+    gol->cell_array[2*gol->cell_nh + 12] = CELL_ALIVE;
+#endif
+    for (int i = 0; i < (gol->cell_nh * gol->cell_nv); i++) {
+        if (GetRandomValue(0,1) == 1) {
+            gol->cell_array[i] = CELL_ALIVE;
+        }
+    }
 }
 
 static bool gol_cell_is_alive(struct gol* gol, const int col, const int line) {
@@ -52,6 +63,81 @@ static bool gol_cell_is_alive(struct gol* gol, const int col, const int line) {
         alive = true;
     }
     return alive;
+}
+
+static void gol_solve(struct gol* gol) {
+    for (int i = 0; i < (gol->cell_nh * gol->cell_nv); i++) {
+        int n_alive = 0;
+        int line = i / _g.gol.cell_nh;
+        int col = i % _g.gol.cell_nh;
+
+        if (col > 0) {
+            if ((gol->cell_array[i - 1] & CELL_ALIVE) != 0) {
+                n_alive++;
+            }
+        }
+        if (col > 0 && line > 0) {
+            if ((gol->cell_array[i - 1 - gol->cell_nh] & CELL_ALIVE) != 0) {
+                n_alive++;
+            }
+        }
+        if (col < (gol->cell_nh -1)) {
+            if ((gol->cell_array[i + 1] & CELL_ALIVE) != 0) {
+                n_alive++;
+            }
+        }
+        if (col < (gol->cell_nh -1) && line > 0) {
+            if ((gol->cell_array[i + 1 - gol->cell_nh] & CELL_ALIVE) != 0) {
+                n_alive++;
+            }
+        }
+        if (line > 0) {
+            if((gol->cell_array[i - gol->cell_nh] & CELL_ALIVE) != 0) {
+                n_alive++;
+            }
+        }
+        if (line < (gol->cell_nv - 1)) {
+            if((gol->cell_array[i + gol->cell_nh] & CELL_ALIVE) != 0) {
+                n_alive++;
+            }
+        }
+        if (col > 0 && line < (gol->cell_nv - 1)) {
+            if((gol->cell_array[i -1 + gol->cell_nh] & CELL_ALIVE) != 0) {
+                n_alive++;
+            }
+        }
+        if (col < (gol->cell_nh -1) && line < (gol->cell_nv - 1)) {
+            if((gol->cell_array[i +1 + gol->cell_nh] & CELL_ALIVE) != 0) {
+                n_alive++;
+            }
+        }
+        //printf("[%i,%i] = %i\n", col, line, n_alive);
+        
+
+        // game of life rules https://en.wikipedia.org/wiki/Conway's_Game_of_Life#Rules
+        // 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
+        // 2. Any live cell with two or three live neighbours lives on to the next generation.
+        // 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
+        // 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+        if ((gol->cell_array[i] & CELL_ALIVE) != 0) {
+            if (n_alive < 2 || n_alive > 3) {
+                gol->cell_array[i] |= CELL_KILL;
+            }
+        } else {
+            if (n_alive == 3) {
+                gol->cell_array[i] |= CELL_BORN;
+            }
+        }
+    }
+    for (int i = 0; i < (gol->cell_nh * gol->cell_nv); i++) {
+        if ((gol->cell_array[i] & CELL_KILL) != 0) {
+            gol->cell_array[i] &= ~(CELL_KILL | CELL_ALIVE);
+        }
+        if ((gol->cell_array[i] & CELL_BORN) != 0) {
+            gol->cell_array[i] &= ~CELL_BORN;
+            gol->cell_array[i] |= CELL_ALIVE;
+        }
+    }
 }
 
 #if 0
@@ -65,20 +151,6 @@ static int __gol_neighbors_get(int i) {
 
 }
 
-static __gol_solve() {
-    // game of life rules https://en.wikipedia.org/wiki/Conway's_Game_of_Life#Rules
-
-    for (int i = 0; i < max; i++) {
-        int line = i / _g.gol.cell_nh;
-        int col = (i % _g.gol.cell_nh);
-
-        int neighbors_alive = 0;
-        // 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
-        if ((_g.gol.cells[i] & CELL_ALIVE) != 0) {
-    //
-    // 2. Any live cell with two or three live neighbours lives on to the next generation.
-    // 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
-    // 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 #endif
 
 
@@ -95,7 +167,7 @@ void slock_raylib_init(void) {
 
     DisableCursor(); // Limit cursor to relative movement inside the window
 
-    SetTargetFPS(60);
+    SetTargetFPS(15);
 
 #if 0
     if (!IsWindowFullscreen()) {
@@ -118,7 +190,7 @@ void slock_raylib_run(void) {
     cam.target = (Vector2){ _g.display.width/2.0f, _g.display.height/2.0f };
     cam.offset = cam.target;
     cam.rotation = 0.0f;
-    cam.zoom = 1.0f;
+    cam.zoom = 0.80f;
 
     while (!WindowShouldClose()) {   // Detect window close button or ESC key
         // camera movements
@@ -129,13 +201,13 @@ void slock_raylib_run(void) {
             cam.offset.y += mouse_delta.y;
         }
 
-        //__gol_solve(_g.gol.cells, _g.gol.cell_nh, _g.gol.cell_nv);
+        gol_solve(&_g.gol);
 
         BeginDrawing();
 
         BeginMode2D(cam);
 
-        ClearBackground(RAYWHITE);
+        ClearBackground(BLACK);
 
         // draw gol
         for (int i = 0; i < _g.gol.cell_nv + 1; i++) {
@@ -160,7 +232,7 @@ void slock_raylib_run(void) {
             break;
         }
 
-        DrawText(TextFormat("Key pressed: %i", key), 110, 110, 20, BLACK);
+        DrawText(TextFormat("Key pressed: %i", key), 110, 110, 20, BLUE);
 
         EndMode2D();
     
