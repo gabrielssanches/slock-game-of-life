@@ -45,114 +45,77 @@ static void gol_create(struct gol* gol, const int ncells_horizontal, const int n
     gol->cell_array[gol->cell_nh -1] = CELL_ALIVE;
     gol->cell_array[((gol->cell_nv -1) * gol->cell_nh)] = CELL_ALIVE;
     gol->cell_array[(gol->cell_nv * gol->cell_nh) - 1] = CELL_ALIVE;
-    gol->cell_array[2*gol->cell_nh + 10] = CELL_ALIVE;
-    gol->cell_array[2*gol->cell_nh + 11] = CELL_ALIVE;
-    gol->cell_array[2*gol->cell_nh + 12] = CELL_ALIVE;
-#endif
+    gol->cell_array[2*gol->cell_nh + 2] = CELL_ALIVE;
+    gol->cell_array[2*gol->cell_nh + 3] = CELL_ALIVE;
+    gol->cell_array[2*gol->cell_nh + 4] = CELL_ALIVE;
+#else
     for (int i = 0; i < (gol->cell_nh * gol->cell_nv); i++) {
         if (GetRandomValue(0,1) == 1) {
             gol->cell_array[i] = CELL_ALIVE;
         }
     }
+#endif
+}
+
+static int gol_cell_index(struct gol* gol, const int col, const int line) {
+    int col_ = (col % gol->cell_nh);
+    if (col_ < 0) {
+        col_ += gol->cell_nh;
+    }
+    int line_ = (line % gol->cell_nv);
+    if (line_ < 0) {
+        line_ += gol->cell_nv;
+    }
+    return col_ + (line_ * gol->cell_nh);
 }
 
 static bool gol_cell_is_alive(struct gol* gol, const int col, const int line) {
     bool alive = false;
-
-
-    int i = col + (line * gol->cell_nh);
-    if (col < 0) {
-        i += gol->cell_nh;
-    }
-    if (col > (gol->cell_nh -1)) {
-        i -= gol->cell_nh;
-    }
-    if (line < 0) {
-        i += gol->cell_nh;
-    }
-    if (col > (gol->cell_nh -1)) {
-        i -= gol->cell_nh;
-    }
+    int i = gol_cell_index(gol, col, line);
     if ((gol->cell_array[i] & CELL_ALIVE) != 0) {
         alive = true;
     }
     return alive;
 }
 
-static void gol_solve(struct gol* gol, const int line, ) {
+static void gol_cell_mark_kill(struct gol* gol, const int col, const int line) {
+    int i = gol_cell_index(gol, col, line);
+    gol->cell_array[i] |= CELL_KILL;
+}
+
+static void gol_cell_mark_born(struct gol* gol, const int col, const int line) {
+    int i = gol_cell_index(gol, col, line);
+    gol->cell_array[i] |= CELL_BORN;
 }
 
 static void gol_solve(struct gol* gol) {
-    
-    gol_(col -1, line -1);
-    gol_(col, line -1);
-    gol_(col +1, line -1);
-    gol_(col -1, line);
-    gol_(col +1, line);
-    gol_(col -1, line +1);
-    gol_(col, line +1);
-    gol_cell_is_alive(col +1, line +1);
+    for (int line = 0; line < gol->cell_nv; line++) {
+        for (int col = 0; col < gol->cell_nh; col++) {
+            int n_alive = 0;
 
-    for (int i = 0; i < (gol->cell_nh * gol->cell_nv); i++) {
-        int n_alive = 0;
-        int line = i / _g.gol.cell_nh;
-        int col = i % _g.gol.cell_nh;
+            if (gol_cell_is_alive(gol, col -1, line -1)) { n_alive++; }
+            if (gol_cell_is_alive(gol, col   , line -1)) { n_alive++; }
+            if (gol_cell_is_alive(gol, col +1, line -1)) { n_alive++; }
+            if (gol_cell_is_alive(gol, col -1, line   )) { n_alive++; }
+            if (gol_cell_is_alive(gol, col +1, line   )) { n_alive++; }
+            if (gol_cell_is_alive(gol, col -1, line +1)) { n_alive++; }
+            if (gol_cell_is_alive(gol, col   , line +1)) { n_alive++; }
+            if (gol_cell_is_alive(gol, col +1, line +1)) { n_alive++; }
+            
 
-        if (col > 0) {
-            if ((gol->cell_array[i - 1] & CELL_ALIVE) != 0) {
-                n_alive++;
-            }
-        }
-        if (col > 0 && line > 0) {
-            if ((gol->cell_array[i - 1 - gol->cell_nh] & CELL_ALIVE) != 0) {
-                n_alive++;
-            }
-        }
-        if (col < (gol->cell_nh -1)) {
-            if ((gol->cell_array[i + 1] & CELL_ALIVE) != 0) {
-                n_alive++;
-            }
-        }
-        if (col < (gol->cell_nh -1) && line > 0) {
-            if ((gol->cell_array[i + 1 - gol->cell_nh] & CELL_ALIVE) != 0) {
-                n_alive++;
-            }
-        }
-        if (line > 0) {
-            if((gol->cell_array[i - gol->cell_nh] & CELL_ALIVE) != 0) {
-                n_alive++;
-            }
-        }
-        if (line < (gol->cell_nv - 1)) {
-            if((gol->cell_array[i + gol->cell_nh] & CELL_ALIVE) != 0) {
-                n_alive++;
-            }
-        }
-        if (col > 0 && line < (gol->cell_nv - 1)) {
-            if((gol->cell_array[i -1 + gol->cell_nh] & CELL_ALIVE) != 0) {
-                n_alive++;
-            }
-        }
-        if (col < (gol->cell_nh -1) && line < (gol->cell_nv - 1)) {
-            if((gol->cell_array[i +1 + gol->cell_nh] & CELL_ALIVE) != 0) {
-                n_alive++;
-            }
-        }
-        //printf("[%i,%i] = %i\n", col, line, n_alive);
-        
-
-        // game of life rules https://en.wikipedia.org/wiki/Conway's_Game_of_Life#Rules
-        // 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
-        // 2. Any live cell with two or three live neighbours lives on to the next generation.
-        // 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
-        // 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
-        if ((gol->cell_array[i] & CELL_ALIVE) != 0) {
-            if (n_alive < 2 || n_alive > 3) {
-                gol->cell_array[i] |= CELL_KILL;
-            }
-        } else {
-            if (n_alive == 3) {
-                gol->cell_array[i] |= CELL_BORN;
+            // game of life rules https://en.wikipedia.org/wiki/Conway's_Game_of_Life#Rules
+            // 1. Any live cell with fewer than two live neighbours dies, as if by underpopulation.
+            // 2. Any live cell with two or three live neighbours lives on to the next generation.
+            // 3. Any live cell with more than three live neighbours dies, as if by overpopulation.
+            // 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+            if (gol_cell_is_alive(gol, col, line)) {
+                if (n_alive < 2 || n_alive > 3) {
+                    gol_cell_mark_kill(gol, col, line);
+                }
+            } else {
+                if (n_alive == 3) {
+                    gol_cell_mark_born(gol, col, line);
+                }
             }
         }
     }
