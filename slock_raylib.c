@@ -58,14 +58,41 @@ static void gol_create(struct gol* gol, const int ncells_horizontal, const int n
 
 static bool gol_cell_is_alive(struct gol* gol, const int col, const int line) {
     bool alive = false;
+
+
     int i = col + (line * gol->cell_nh);
+    if (col < 0) {
+        i += gol->cell_nh;
+    }
+    if (col > (gol->cell_nh -1)) {
+        i -= gol->cell_nh;
+    }
+    if (line < 0) {
+        i += gol->cell_nh;
+    }
+    if (col > (gol->cell_nh -1)) {
+        i -= gol->cell_nh;
+    }
     if ((gol->cell_array[i] & CELL_ALIVE) != 0) {
         alive = true;
     }
     return alive;
 }
 
+static void gol_solve(struct gol* gol, const int line, ) {
+}
+
 static void gol_solve(struct gol* gol) {
+    
+    gol_(col -1, line -1);
+    gol_(col, line -1);
+    gol_(col +1, line -1);
+    gol_(col -1, line);
+    gol_(col +1, line);
+    gol_(col -1, line +1);
+    gol_(col, line +1);
+    gol_cell_is_alive(col +1, line +1);
+
     for (int i = 0; i < (gol->cell_nh * gol->cell_nv); i++) {
         int n_alive = 0;
         int line = i / _g.gol.cell_nh;
@@ -158,6 +185,7 @@ void slock_raylib_init(void) {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_TOPMOST | FLAG_WINDOW_ALWAYS_RUN);
     InitWindow(0, 0, "screen-lock");
 
+    SetTargetFPS(10);
     int display = GetCurrentMonitor();
     _g.display.width = GetMonitorWidth(display);
     _g.display.height = GetMonitorHeight(display);
@@ -167,7 +195,6 @@ void slock_raylib_init(void) {
 
     DisableCursor(); // Limit cursor to relative movement inside the window
 
-    SetTargetFPS(15);
 
 #if 0
     if (!IsWindowFullscreen()) {
@@ -178,7 +205,7 @@ void slock_raylib_init(void) {
 #endif
     memset(&_passwd, 0, sizeof(_passwd));
 
-    _g.grid.size = 30;
+    _g.grid.size = 10;
     _g.grid.nh = _g.display.width / _g.grid.size;
     _g.grid.nv = _g.display.height / _g.grid.size;
     gol_create(&_g.gol, _g.grid.nh, _g.grid.nv);
@@ -207,15 +234,17 @@ void slock_raylib_run(void) {
 
         BeginMode2D(cam);
 
-        ClearBackground(BLACK);
+        ClearBackground(RAYWHITE);
 
-        // draw gol
+#if 0
+        // draw grid 
         for (int i = 0; i < _g.gol.cell_nv + 1; i++) {
             DrawLineV((Vector2){0, _g.grid.size * i}, (Vector2){_g.display.width, _g.grid.size * i}, LIGHTGRAY);
         }
         for (int i = 0; i < _g.gol.cell_nh + 1; i++) {
             DrawLineV((Vector2){_g.grid.size * i, 0}, (Vector2){_g.grid.size * i, _g.display.height}, LIGHTGRAY);
         }
+#endif
 
         // draw life
         for (int i = 0; i < (_g.gol.cell_nv * _g.gol.cell_nh); i++) {
@@ -223,7 +252,7 @@ void slock_raylib_run(void) {
             int col = (i % _g.gol.cell_nh);
             if (gol_cell_is_alive(&_g.gol, col, line)) {
                 Rectangle life = { _g.grid.size * col, _g.grid.size * line, _g.grid.size, _g.grid.size };
-                DrawRectangleRec(life, RED);
+                DrawRectangleRec(life, BLACK);
             }
         }
 
